@@ -1,0 +1,92 @@
+from django.contrib import auth
+from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import PermissionDenied
+from django.core.mail import send_mail
+from django.db import models
+from django.db.models.manager import EmptyManager
+from django.utils import 
+
+def update_last_login(sender, user, **kwargs):
+    """
+    A signal receiver which updates the last_login date for
+    the user logging in.
+    """
+    user.last_login = timezone.now()
+    user.save(update_fields=['last_login'])
+    
+    
+class PermissionManager(models.Manager):
+    use_in_migrations = True
+
+    def get_by_natural_key(self, codename, app_label, model):
+        return self.get(
+            codename=codename,
+            content_type=ContentType.objects.db_manager(self.db).get_by_natural_key(app_label, model),
+        )
+        
+class Permission(models.Model):
+
+{
+	"ok": true,
+	"members": [{
+			"id": "W012A3CDE",
+			"real_name": "Egon Spengler",
+			"tz": "America/Los_Angeles",
+			"activity_periods": [{
+					"start_time": "Feb 1 2020  1:33PM",
+					"end_time": "Feb 1 2020 1:54PM"
+				},
+				{
+					"start_time": "Mar 1 2020  11:11AM",
+					"end_time": "Mar 1 2020 2:00PM"
+				},
+				{
+					"start_time": "Mar 16 2020  5:33PM",
+					"end_time": "Mar 16 2020 8:02PM"
+				}
+			]
+		},
+		{
+			"id": "W07QCRPA4",
+			"real_name": "Glinda Southgood",
+			"tz": "Asia/Kolkata",
+			"activity_periods": [{
+					"start_time": "Feb 1 2020  1:33PM",
+					"end_time": "Feb 1 2020 1:54PM"
+				},
+				{
+					"start_time": "Mar 1 2020  11:11AM",
+					"end_time": "Mar 1 2020 2:00PM"
+				},
+				{
+					"start_time": "Mar 16 2020  5:33PM",
+					"end_time": "Mar 16 2020 8:02PM"
+				}
+			]
+		}
+	]
+}
+
+def _user_get_permissions(user, obj, from_name):
+    permissions = set()
+    name = 'get_%s_permissions' % from_name
+    for backend in auth.get_backends():
+        if hasattr(backend, name):
+            permissions.update(getattr(backend, name)(user, obj))
+    return permissions
+    
+    
+def _user_has_perm(user, perm, obj):
+    """
+    A backend can raise `PermissionDenied` to short-circuit permission checking.
+    """
+    for backend in auth.get_backends():
+        if not hasattr(backend, 'has_perm'):
+            continue
+        try:
+            if backend.has_perm(user, perm, obj):
+                return True
+        except PermissionDenied:
+            return False
+    return False
